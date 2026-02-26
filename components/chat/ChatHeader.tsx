@@ -1,15 +1,28 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useChatStore } from "@/store/useChatStore";
+import { formatMessageTime } from "@/lib/formatTime";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function ChatHeader() {
+  const selectedConversationId = useChatStore(
+    (state) => state.selectedConversationId,
+  );
   const setSelectedConversationId = useChatStore(
     (state) => state.setSelectedConversation,
   );
   const onBack = () => setSelectedConversationId(null);
 
+  const conversations = useQuery(api.conversations.list);
+  const currentConversation = conversations?.find(
+    (c) => c.id === selectedConversationId,
+  );
+  const otherUser = currentConversation?.otherUser;
+
   return (
-    <div className="h-16 border-b border-border bg-background p-4 flex items-center shadow-sm z-10 gap-2">
+    <div className="h-16 border-b border-border bg-background p-4 flex items-center shadow-sm z-10 gap-3">
       <Button
         variant="ghost"
         size="icon"
@@ -18,7 +31,33 @@ export function ChatHeader() {
       >
         <ArrowLeft className="h-4 w-4" />
       </Button>
-      <h2 className="font-semibold text-lg">Conversation</h2>
+      {otherUser ? (
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={otherUser.image} />
+              <AvatarFallback>
+                {otherUser.name?.charAt(0) || "?"}
+              </AvatarFallback>
+            </Avatar>
+            {otherUser.isOnline && (
+              <span className="absolute bottom-0 right-0 w-3 h-3 border-2 border-background bg-green-500 rounded-full" />
+            )}
+          </div>
+          <div className="flex flex-col">
+            <h2 className="font-semibold text-sm leading-tight">
+              {otherUser.name}
+            </h2>
+            <span className="text-xs text-muted-foreground">
+              {otherUser.isOnline
+                ? "Online"
+                : `Last seen ${formatMessageTime(otherUser.lastSeen)}`}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <h2 className="font-semibold text-lg">Conversation</h2>
+      )}
     </div>
   );
 }
