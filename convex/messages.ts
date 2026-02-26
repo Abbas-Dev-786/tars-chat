@@ -60,7 +60,10 @@ export const send = mutation({
           )
           .unique();
         if (membership) {
-          await ctx.db.patch(membership._id, { hasUnread: true });
+          await ctx.db.patch(membership._id, {
+            hasUnread: true,
+            unreadCount: (membership.unreadCount || 0) + 1,
+          });
         }
       }
     }

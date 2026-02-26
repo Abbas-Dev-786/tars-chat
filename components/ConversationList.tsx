@@ -79,8 +79,14 @@ export default function ConversationList({
                   >
                     {conv.lastMessage?.content || "No messages yet"}
                   </span>
-                  {conv.hasUnread && (
-                    <span className="w-2.5 h-2.5 bg-primary rounded-full flex-shrink-0 ml-2 animate-pulse" />
+                  {(conv.unreadCount > 0 || conv.hasUnread) && (
+                    <div className="flex items-center justify-center bg-primary text-primary-foreground text-[10px] font-bold h-5 min-w-[20px] rounded-full px-1.5 ml-2">
+                      {conv.unreadCount > 0
+                        ? conv.unreadCount > 99
+                          ? "99+"
+                          : conv.unreadCount
+                        : 1}
+                    </div>
                   )}
                 </div>
               </div>

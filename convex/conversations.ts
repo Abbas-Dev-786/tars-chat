@@ -42,12 +42,14 @@ export const getOrCreate = mutation({
       conversationId,
       userId: me._id,
       hasUnread: false,
+      unreadCount: 0,
     });
 
     await ctx.db.insert("conversationMembers", {
       conversationId,
       userId: args.otherUserId,
       hasUnread: false,
+      unreadCount: 0,
     });
 
     return conversationId;
@@ -106,6 +108,7 @@ export const list = query({
           lastMessage,
           updatedAt: conversation.updatedAt,
           hasUnread: membership.hasUnread,
+          unreadCount: membership.unreadCount || 0,
         };
       }),
     );
@@ -136,8 +139,8 @@ export const markRead = mutation({
       )
       .unique();
 
-    if (membership && membership.hasUnread) {
-      await ctx.db.patch(membership._id, { hasUnread: false });
+    if (membership && (membership.hasUnread || membership.unreadCount)) {
+      await ctx.db.patch(membership._id, { hasUnread: false, unreadCount: 0 });
     }
   },
 });

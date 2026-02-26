@@ -21,6 +21,7 @@ export default defineSchema({
     conversationId: v.id("conversations"),
     userId: v.id("users"),
     hasUnread: v.boolean(),
+    unreadCount: v.optional(v.number()),
   })
     .index("by_conversation", ["conversationId"])
     .index("by_user", ["userId"])
