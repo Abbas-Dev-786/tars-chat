@@ -6,14 +6,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatMessageTime } from "@/lib/formatTime";
 import { Id } from "@/convex/_generated/dataModel";
+import { useChatStore } from "@/store/useChatStore";
 
 export default function ConversationList({
-  selectedConversationId,
   onSelect,
 }: {
-  selectedConversationId: string | null;
   onSelect: (id: Id<"conversations">) => void;
 }) {
+  const selectedConversationId = useChatStore(
+    (state) => state.selectedConversationId,
+  );
   const conversations = useQuery(api.conversations.list);
 
   if (conversations === undefined) {

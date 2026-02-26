@@ -4,21 +4,26 @@ import { UserButton, useUser } from "@clerk/nextjs";
 import UserSearch from "./UserSearch";
 import ConversationList from "./ConversationList";
 import { Id } from "@/convex/_generated/dataModel";
+import { useChatStore } from "@/store/useChatStore";
+import { cn } from "@/lib/utils";
 
-export default function Sidebar({
-  selectedConversationId,
-  onSelectConversation,
-  className = "",
-}: {
-  selectedConversationId: Id<"conversations"> | null;
-  onSelectConversation: (id: Id<"conversations">) => void;
-  className?: string;
-}) {
+export default function Sidebar() {
   const { user } = useUser();
+  const selectedConversationId = useChatStore(
+    (state) => state.selectedConversationId,
+  );
+  const setSelectedConversation = useChatStore(
+    (state) => state.setSelectedConversation,
+  );
 
   return (
     <div
-      className={`h-full border-r border-border bg-muted/30 flex-col shrink-0 ${className}`}
+      className={cn(
+        "h-full border-r border-border bg-muted/30 flex-col shrink-0",
+        selectedConversationId
+          ? "hidden md:flex md:w-80"
+          : "flex w-full md:w-80",
+      )}
     >
       <div className="p-4 border-b border-border flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight">ChatApp</h1>
@@ -28,12 +33,9 @@ export default function Sidebar({
         </div>
       </div>
       <div className="p-4 border-b border-border">
-        <UserSearch onSelectCallback={onSelectConversation} />
+        <UserSearch onSelectCallback={setSelectedConversation} />
       </div>
-      <ConversationList
-        selectedConversationId={selectedConversationId}
-        onSelect={onSelectConversation}
-      />
+      <ConversationList onSelect={(id) => setSelectedConversation(id)} />
     </div>
   );
 }

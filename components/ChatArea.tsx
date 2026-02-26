@@ -8,18 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send, ArrowDown, ArrowLeft } from "lucide-react";
 import { formatMessageTime } from "@/lib/formatTime";
-import { Id } from "@/convex/_generated/dataModel";
 import useStoreUser from "@/hooks/useStoreUser";
+import { useChatStore } from "@/store/useChatStore";
+import { cn } from "@/lib/utils";
 
-export default function ChatArea({
-  conversationId,
-  onBack,
-  className = "",
-}: {
-  conversationId: Id<"conversations"> | null;
-  onBack?: () => void;
-  className?: string;
-}) {
+export default function ChatArea() {
+  const conversationId = useChatStore((state) => state.selectedConversationId);
+  const setSelectedConversationId = useChatStore(
+    (state) => state.setSelectedConversation,
+  );
+
+  const onBack = () => setSelectedConversationId(null);
   const { userId } = useStoreUser();
   const [newMessage, setNewMessage] = useState("");
 
@@ -97,7 +96,10 @@ export default function ChatArea({
   if (!conversationId) {
     return (
       <div
-        className={`flex-1 h-full hidden md:flex items-center justify-center text-muted-foreground bg-muted/10 ${className}`}
+        className={cn(
+          "flex-1 h-full hidden md:flex items-center justify-center text-muted-foreground bg-muted/10",
+          conversationId ? "flex" : "hidden md:flex",
+        )}
       >
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2">Welcome to your Chat</h2>
@@ -109,7 +111,10 @@ export default function ChatArea({
 
   return (
     <div
-      className={`flex-1 flex flex-col h-full relative bg-muted/10 ${className}`}
+      className={cn(
+        "flex-1 flex flex-col h-full relative bg-muted/10 ",
+        conversationId ? "flex" : "hidden md:flex",
+      )}
     >
       {/* Header (could be extracted) */}
       <div className="h-16 border-b border-border bg-background p-4 flex items-center shadow-sm z-10 gap-2">
