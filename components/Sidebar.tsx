@@ -26,7 +26,7 @@ export default function Sidebar() {
       )}
     >
       <div className="p-4 border-b border-border flex items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tight">ChatApp</h1>
+        <h1 className="text-xl font-bold tracking-tight">Tars Chat</h1>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{user?.firstName}</span>
           <UserButton afterSignOutUrl="/sign-in" />
