@@ -14,6 +14,7 @@ import { ChatEmptyState } from "./chat/ChatEmptyState";
 import { MessageBubble } from "./chat/MessageBubble";
 import { TypingIndicator } from "./chat/TypingIndicator";
 import { ChatInput } from "./chat/ChatInput";
+import { formatDateSeparator } from "@/lib/formatTime";
 
 export default function ChatArea() {
   const conversationId = useChatStore((state) => state.selectedConversationId);
@@ -101,13 +102,28 @@ export default function ChatArea() {
             </span>
           </div>
         ) : (
-          messages.map((msg) => (
-            <MessageBubble
-              key={msg._id}
-              msg={msg}
-              isMe={msg.senderId === userId}
-            />
-          ))
+          messages.map((msg, index) => {
+            const isMe = msg.senderId === userId;
+            const currentDay = formatDateSeparator(msg._creationTime);
+            const prevMsg = index > 0 ? messages[index - 1] : null;
+            const prevDay = prevMsg
+              ? formatDateSeparator(prevMsg._creationTime)
+              : null;
+            const showDate = currentDay !== prevDay;
+
+            return (
+              <div key={msg._id} className="flex flex-col">
+                {showDate && (
+                  <div className="flex justify-center my-4">
+                    <span className="bg-background/80 backdrop-blur-sm text-muted-foreground text-xs px-3 py-1 rounded-md shadow-sm border border-border/50 z-10">
+                      {currentDay}
+                    </span>
+                  </div>
+                )}
+                <MessageBubble msg={msg} isMe={isMe} />
+              </div>
+            );
+          })
         )}
 
         <TypingIndicator typers={typers} />
