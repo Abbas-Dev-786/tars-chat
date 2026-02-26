@@ -82,3 +82,79 @@ export const send = mutation({
     }
   },
 });
+
+export const deleteMsg = mutation({
+  args: { messageId: v.id("messages") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const me = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+
+    if (!me) throw new Error("User not found");
+
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message not found");
+
+    if (message.senderId !== me._id) {
+      throw new Error("Cannot delete someone else's message");
+    }
+
+    await ctx.db.patch(args.messageId, {
+      isDeleted: true,
+      content: "", // optionally clear content or keep it for moderation
+    });
+  },
+});
+
+export const react = mutation({
+  args: {
+    messageId: v.id("messages"),
+    emoji: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const me = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
+      .unique();
+
+    if (!me) throw new Error("User not found");
+
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message not found");
+
+    let reactions = message.reactions || [];
+
+    const existingReactionIndex = reactions.findIndex(
+      (r) => r.emoji === args.emoji,
+    );
+
+    if (existingReactionIndex !== -1) {
+      const userIds = reactions[existingReactionIndex].userIds;
+      const userIndex = userIds.indexOf(me._id);
+
+      if (userIndex !== -1) {
+        // Toggle off
+        userIds.splice(userIndex, 1);
+        if (userIds.length === 0) {
+          // Remove emoji completely if no users left
+          reactions.splice(existingReactionIndex, 1);
+        }
+      } else {
+        // Add user to this emoji
+        userIds.push(me._id);
+      }
+    } else {
+      // New emoji reaction
+      reactions.push({ emoji: args.emoji, userIds: [me._id] });
+    }
+
+    await ctx.db.patch(args.messageId, { reactions });
+  },
+});

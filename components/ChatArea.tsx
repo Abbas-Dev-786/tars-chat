@@ -53,7 +53,6 @@ export default function ChatArea() {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
 
-    // We consider it scrolled up if we're more than 50px away from the bottom
     const isUp = scrollHeight - scrollTop - clientHeight > 50;
     setIsScrolledUp(isUp);
   };
@@ -120,7 +119,11 @@ export default function ChatArea() {
                     </span>
                   </div>
                 )}
-                <MessageBubble msg={msg} isMe={isMe} />
+                <MessageBubble
+                  msg={msg as any}
+                  isMe={isMe}
+                  currentUserId={userId!}
+                />
               </div>
             );
           })

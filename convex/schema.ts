@@ -33,6 +33,15 @@ export default defineSchema({
     content: v.string(),
     type: v.string(), // "text", "image", "system"
     status: v.optional(v.string()), // "sent", "delivered", "read"
+    isDeleted: v.optional(v.boolean()),
+    reactions: v.optional(
+      v.array(
+        v.object({
+          emoji: v.string(),
+          userIds: v.array(v.id("users")),
+        }),
+      ),
+    ),
   }).index("by_conversation", ["conversationId"]),
 
   typingIndicators: defineTable({
