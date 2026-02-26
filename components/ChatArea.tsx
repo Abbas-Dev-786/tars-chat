@@ -3,24 +3,22 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState, useEffect, useRef } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, ArrowDown, ArrowLeft } from "lucide-react";
-import { formatMessageTime } from "@/lib/formatTime";
+import { Send, ArrowDown } from "lucide-react";
 import useStoreUser from "@/hooks/useStoreUser";
 import { useChatStore } from "@/store/useChatStore";
 import { cn } from "@/lib/utils";
 
+import { ChatHeader } from "./chat/ChatHeader";
+import { ChatEmptyState } from "./chat/ChatEmptyState";
+import { MessageBubble } from "./chat/MessageBubble";
+import { TypingIndicator } from "./chat/TypingIndicator";
+import { ChatInput } from "./chat/ChatInput";
+
 export default function ChatArea() {
   const conversationId = useChatStore((state) => state.selectedConversationId);
-  const setSelectedConversationId = useChatStore(
-    (state) => state.setSelectedConversation,
-  );
 
-  const onBack = () => setSelectedConversationId(null);
   const { userId } = useStoreUser();
-  const [newMessage, setNewMessage] = useState("");
 
   const messages = useQuery(
     api.messages.list,
@@ -32,14 +30,11 @@ export default function ChatArea() {
     conversationId ? { conversationId } : "skip",
   );
 
-  const sendMessage = useMutation(api.messages.send);
-  const setTyping = useMutation(api.typing.set);
   const markRead = useMutation(api.conversations.markRead);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isScrolledUp, setIsScrolledUp] = useState(false);
 
-  // Auto-scroll logic depending on if user is scrolled up
   useEffect(() => {
     if (!scrollRef.current) return;
     if (!isScrolledUp) {
@@ -47,7 +42,6 @@ export default function ChatArea() {
     }
   }, [messages, isScrolledUp]);
 
-  // Handle Mark as Read whenever conversation changes
   useEffect(() => {
     if (conversationId) {
       markRead({ conversationId }).catch(console.error);
@@ -70,43 +64,8 @@ export default function ChatArea() {
     }
   };
 
-  const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewMessage(e.target.value);
-    if (conversationId) {
-      setTyping({ conversationId }).catch(console.error);
-    }
-  };
-
-  const handleSend = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!newMessage.trim() || !conversationId) return;
-
-    try {
-      await sendMessage({
-        conversationId,
-        content: newMessage,
-      });
-      setNewMessage("");
-      scrollToBottom();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   if (!conversationId) {
-    return (
-      <div
-        className={cn(
-          "flex-1 h-full hidden md:flex items-center justify-center text-muted-foreground bg-muted/10",
-          conversationId ? "flex" : "hidden md:flex",
-        )}
-      >
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Welcome to your Chat</h2>
-          <p>Select a conversation from the sidebar to start messaging.</p>
-        </div>
-      </div>
-    );
+    return <ChatEmptyState />;
   }
 
   return (
@@ -116,20 +75,8 @@ export default function ChatArea() {
         conversationId ? "flex" : "hidden md:flex",
       )}
     >
-      {/* Header (could be extracted) */}
-      <div className="h-16 border-b border-border bg-background p-4 flex items-center shadow-sm z-10 gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden shrink-0"
-          onClick={onBack}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h2 className="font-semibold text-lg">Conversation</h2>
-      </div>
+      <ChatHeader />
 
-      {/* Messages */}
       <div
         className="flex-1 overflow-y-auto p-4 space-y-4"
         ref={scrollRef}
@@ -154,53 +101,18 @@ export default function ChatArea() {
             </span>
           </div>
         ) : (
-          messages.map((msg) => {
-            const isMe = msg.senderId === userId;
-            return (
-              <div
-                key={msg._id}
-                className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
-              >
-                <div
-                  className={`px-4 py-2 max-w-[70%] break-words shadow-sm transition-all animate-in slide-in-from-bottom-2 fade-in duration-300 ${
-                    isMe
-                      ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
-                      : "bg-background border border-border rounded-2xl rounded-bl-sm"
-                  }`}
-                >
-                  <p className="text-sm">{msg.content}</p>
-                </div>
-                <span className="text-[10px] text-muted-foreground mt-1 mx-1">
-                  {formatMessageTime(msg._creationTime)}
-                </span>
-              </div>
-            );
-          })
+          messages.map((msg) => (
+            <MessageBubble
+              key={msg._id}
+              msg={msg}
+              isMe={msg.senderId === userId}
+            />
+          ))
         )}
 
-        {/* Typing indicator */}
-        {typers && typers.length > 0 && (
-          <div className="flex items-center gap-2 text-muted-foreground text-xs italic">
-            <div className="flex gap-1">
-              <span
-                className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce"
-                style={{ animationDelay: "0ms" }}
-              />
-              <span
-                className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce"
-                style={{ animationDelay: "150ms" }}
-              />
-              <span
-                className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce"
-                style={{ animationDelay: "300ms" }}
-              />
-            </div>
-            {typers.join(", ")} {typers.length > 1 ? "are" : "is"} typing...
-          </div>
-        )}
+        <TypingIndicator typers={typers} />
       </div>
 
-      {/* Floating Scroll to bottom button */}
       {isScrolledUp && (
         <Button
           size="icon"
@@ -212,25 +124,7 @@ export default function ChatArea() {
         </Button>
       )}
 
-      {/* Input Area */}
-      <div className="p-4 bg-background border-t border-border">
-        <form onSubmit={handleSend} className="flex gap-2">
-          <Input
-            value={newMessage}
-            onChange={handleTyping}
-            placeholder="Type a message..."
-            className="flex-1 bg-muted/50 border-none focus-visible:ring-1"
-          />
-          <Button
-            type="submit"
-            disabled={!newMessage.trim()}
-            size="icon"
-            className="shrink-0 transition-transform active:scale-95"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
-      </div>
+      <ChatInput onSend={scrollToBottom} />
     </div>
   );
 }
