@@ -34,6 +34,7 @@ export const getOrCreate = mutation({
     // Create new
     const conversationId = await ctx.db.insert("conversations", {
       participantIds: [me._id, args.otherUserId],
+      isGroup: false,
       updatedAt: Date.now(),
     });
 
@@ -80,7 +81,15 @@ export const list = query({
         const otherUserId = conversation.participantIds.find(
           (id) => id !== me._id,
         )!;
-        const otherUser = await ctx.db.get(otherUserId);
+        const otherUserDoc = await ctx.db.get(otherUserId);
+
+        // Compute isOnline based on lastSeen
+        const otherUser = otherUserDoc
+          ? {
+              ...otherUserDoc,
+              isOnline: Date.now() - otherUserDoc.lastSeen < 15000,
+            }
+          : null;
 
         // Get last message
         const lastMessage = await ctx.db

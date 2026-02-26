@@ -38,6 +38,8 @@ export const send = mutation({
       conversationId: args.conversationId,
       senderId: me._id,
       content: args.content.trim(),
+      type: "text",
+      status: "sent",
     });
 
     await ctx.db.patch(args.conversationId, {

@@ -137,9 +137,15 @@ export default function ChatArea({
             </span>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <span className="text-muted-foreground">
+          <div className="flex h-full items-center justify-center flex-col gap-3 animate-in fade-in duration-500">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+              <Send className="w-6 h-6 text-muted-foreground ml-1" />
+            </div>
+            <span className="text-muted-foreground font-medium">
               No messages yet. Say hello!
+            </span>
+            <span className="text-muted-foreground text-sm">
+              Send your first message below.
             </span>
           </div>
         ) : (
@@ -151,10 +157,10 @@ export default function ChatArea({
                 className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
               >
                 <div
-                  className={`px-4 py-2 rounded-2xl max-w-[70%] break-words shadow-sm ${
+                  className={`px-4 py-2 max-w-[70%] break-words shadow-sm transition-all animate-in slide-in-from-bottom-2 fade-in duration-300 ${
                     isMe
-                      ? "bg-primary text-primary-foreground rounded-br-sm"
-                      : "bg-background border border-border rounded-bl-sm"
+                      ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
+                      : "bg-background border border-border rounded-2xl rounded-bl-sm"
                   }`}
                 >
                   <p className="text-sm">{msg.content}</p>

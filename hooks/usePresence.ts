@@ -11,7 +11,7 @@ export function usePresence() {
     const setPresence = async () => {
       if (!mounted) return;
       try {
-        await updatePresence({ isOnline: true });
+        await updatePresence();
       } catch (error) {
         console.error("Failed to update presence", error);
       }
@@ -19,13 +19,12 @@ export function usePresence() {
 
     setPresence();
 
-    const intervalId = setInterval(setPresence, 30000);
+    // Ping every 10 seconds to keep lastSeen current
+    const intervalId = setInterval(setPresence, 10000);
 
     return () => {
       mounted = false;
       clearInterval(intervalId);
-      // Attempt to set offline on unmount
-      updatePresence({ isOnline: false }).catch(console.error);
     };
   }, [updatePresence]);
 }

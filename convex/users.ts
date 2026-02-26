@@ -26,7 +26,7 @@ export const store = mutation({
           name: identity.name ?? "Anonymous",
           email: identity.email ?? "",
           image: identity.pictureUrl,
-          isOnline: true,
+          lastSeen: Date.now(),
         });
       }
       return user._id;
@@ -38,14 +38,14 @@ export const store = mutation({
       name: identity.name ?? "Anonymous",
       email: identity.email ?? "",
       image: identity.pictureUrl,
-      isOnline: true,
+      lastSeen: Date.now(),
     });
   },
 });
 
 export const updatePresence = mutation({
-  args: { isOnline: v.boolean() },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       return;
@@ -58,7 +58,7 @@ export const updatePresence = mutation({
 
     if (user) {
       await ctx.db.patch(user._id, {
-        isOnline: args.isOnline,
+        lastSeen: Date.now(),
       });
     }
   },
@@ -90,6 +90,11 @@ export const search = query({
       users = users.filter((u) => u.name.toLowerCase().includes(query));
     }
 
-    return users;
+    // Return users mapped with a computed isOnline boolean (active within last 15s)
+    const now = Date.now();
+    return users.map((u) => ({
+      ...u,
+      isOnline: now - u.lastSeen < 15000,
+    }));
   },
 });

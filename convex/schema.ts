@@ -7,11 +7,13 @@ export default defineSchema({
     name: v.string(),
     email: v.string(),
     image: v.optional(v.string()),
-    isOnline: v.boolean(),
+    lastSeen: v.number(),
   }).index("by_token", ["tokenIdentifier"]),
 
   conversations: defineTable({
     participantIds: v.array(v.id("users")),
+    isGroup: v.boolean(),
+    name: v.optional(v.string()),
     updatedAt: v.number(),
   }),
 
@@ -28,6 +30,8 @@ export default defineSchema({
     conversationId: v.id("conversations"),
     senderId: v.id("users"),
     content: v.string(),
+    type: v.string(), // "text", "image", "system"
+    status: v.optional(v.string()), // "sent", "delivered", "read"
   }).index("by_conversation", ["conversationId"]),
 
   typingIndicators: defineTable({
