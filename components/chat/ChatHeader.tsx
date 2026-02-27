@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useChatStore } from "@/store/useChatStore";
-import { formatMessageTime } from "@/lib/formatTime";
+import { formatDateSeparator, formatTimeOnly } from "@/lib/formatTime";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -51,7 +51,7 @@ export function ChatHeader() {
             <span className="text-xs text-muted-foreground">
               {otherUser.isOnline
                 ? "Online"
-                : `Last seen ${formatMessageTime(otherUser.lastSeen)}`}
+                : `Last seen ${formatDateSeparator(otherUser.lastSeen)} at ${formatTimeOnly(otherUser.lastSeen)}`}
             </span>
           </div>
         </div>

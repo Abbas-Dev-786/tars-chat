@@ -16,6 +16,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export default function UserSearch({
   onSelectCallback,
@@ -24,7 +25,8 @@ export default function UserSearch({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const users = useQuery(api.users.search, { searchQuery: query });
+  const debouncedQuery = useDebounce(query, 500);
+  const users = useQuery(api.users.search, { searchQuery: debouncedQuery });
   const getOrCreate = useMutation(api.conversations.getOrCreate);
 
   const handleSelect = async (otherUserId: Id<"users">) => {

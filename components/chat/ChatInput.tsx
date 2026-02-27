@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 import { useChatStore } from "@/store/useChatStore";
+import { useThrottleCallback } from "@/hooks/use-debounce";
 
 export function ChatInput({ onSend }: { onSend: () => void }) {
   const conversationId = useChatStore((state) => state.selectedConversationId);
@@ -14,9 +15,13 @@ export function ChatInput({ onSend }: { onSend: () => void }) {
   const sendMessage = useMutation(api.messages.send);
   const setTyping = useMutation(api.typing.set);
 
+  const throttledSetTyping = useThrottleCallback(() => {
+    setTyping({ conversationId: conversationId! }).catch(console.error);
+  }, 2000);
+
   const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNewMessage(e.target.value);
-    setTyping({ conversationId: conversationId! }).catch(console.error);
+    throttledSetTyping();
   };
 
   const handleSend = async (e?: React.FormEvent) => {

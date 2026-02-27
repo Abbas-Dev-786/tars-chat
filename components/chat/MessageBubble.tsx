@@ -50,19 +50,19 @@ export function MessageBubble({
       >
         {/* Message Bubble */}
         <div
-          className={`px-3 py-1.5 pb-2.5 max-w-[80%] min-w-[80px] shadow-sm transition-all animate-in slide-in-from-bottom-2 fade-in duration-300 relative ${
+          className={`px-3 py-1.5 shadow-sm transition-all animate-in slide-in-from-bottom-2 fade-in duration-300 relative ${
             isMe
               ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
               : "bg-background border border-border rounded-2xl rounded-bl-sm"
           }`}
         >
           {msg.isDeleted ? (
-            <div className="flex items-center gap-1.5 text-[15px] pb-3 pr-10 italic opacity-70">
+            <div className="flex items-center gap-1.5 text-md pb-3 pr-3 italic opacity-70">
               <Ban className="w-4 h-4" />
               <span>This message was deleted</span>
             </div>
           ) : (
-            <p className="text-[15px] leading-snug break-words pb-3 pr-12">
+            <p className="text-md leading-snug break-words pb-3 pr-12">
               {msg.content}
             </p>
           )}
@@ -126,9 +126,9 @@ export function MessageBubble({
                 key={i}
                 onClick={() => !msg.isDeleted && handleReact(r.emoji)}
                 disabled={msg.isDeleted}
-                className={`flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full border shadow-sm transition-colors ${
+                className={`flex items-center gap-1 text-md px-1.5 py-0.5 rounded-full border shadow-sm transition-colors cursor-pointer ${
                   hasReacted
-                    ? "bg-primary/20 border-primary/30"
+                    ? "bg-secondary/20 border-primary/30"
                     : "bg-background border-border/50"
                 }`}
               >
