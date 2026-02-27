@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "@/providers/ConvexClientProvider";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const fontSans = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+const fontMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
 
 export const metadata: Metadata = {
   title: "Tars Chat",
@@ -18,8 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={inter.variable}>
-        <body className="antialiased">
+      <html lang="en">
+        <body
+          className={`${fontSans.variable}  ${fontMono.variable} antialiased`}
+        >
           <ConvexClientProvider>{children}</ConvexClientProvider>
         </body>
       </html>
