@@ -2,17 +2,12 @@
 
 import Sidebar from "@/components/Sidebar";
 import ChatArea from "@/components/ChatArea";
-import useStoreUser from "@/hooks/useStoreUser";
 import { usePresence } from "@/hooks/usePresence";
-import PageLoader from "@/components/PageLoader";
+import useStoreUser from "@/hooks/useStoreUser";
 
 export default function Page() {
-  const { isLoading } = useStoreUser();
+  useStoreUser();
   usePresence();
-
-  if (isLoading) {
-    return <PageLoader />;
-  }
 
   return (
     <main className="flex h-screen w-full overflow-hidden bg-background">

@@ -69,7 +69,6 @@ export function MessageBubble({
           </span>
         </div>
 
-        {/* Action Buttons (visible on hover desktop, always on mobile) */}
         {!msg.isDeleted && (
           <div className="opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
             <Popover>
@@ -107,7 +106,6 @@ export function MessageBubble({
         )}
       </div>
 
-      {/* Reactions Display */}
       {msg.reactions && msg.reactions.length > 0 && (
         <div
           className={`flex flex-wrap gap-1 mt-1 z-10 ${isMe ? "pr-2" : "pl-2"}`}

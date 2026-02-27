@@ -4,9 +4,25 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatMessageTime } from "@/lib/formatTime";
 import { Id } from "@/convex/_generated/dataModel";
 import { useChatStore } from "@/store/useChatStore";
+
+function ConversationSkeleton() {
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-lg">
+      <Skeleton className="h-12 w-12 rounded-full shrink-0" />
+      <div className="flex flex-col gap-2 flex-1 overflow-hidden">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-3.5 w-28 rounded" />
+          <Skeleton className="h-3 w-10 rounded" />
+        </div>
+        <Skeleton className="h-3 w-40 rounded" />
+      </div>
+    </div>
+  );
+}
 
 export default function ConversationList({
   onSelect,
@@ -20,16 +36,24 @@ export default function ConversationList({
 
   if (conversations === undefined) {
     return (
-      <div className="p-4 text-center text-sm text-muted-foreground animate-pulse">
-        Loading conversations...
+      <div className="flex flex-col gap-1 p-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <ConversationSkeleton key={i} />
+        ))}
       </div>
     );
   }
 
   if (conversations.length === 0) {
     return (
-      <div className="p-4 text-center text-sm text-muted-foreground mt-4">
-        No conversations yet. Search for a user to start chatting!
+      <div className="flex flex-col items-center justify-center gap-2 p-8 mt-4 text-center">
+        <span className="text-2xl">💬</span>
+        <p className="text-sm font-medium text-foreground">
+          No conversations yet
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Search for a user above to start chatting!
+        </p>
       </div>
     );
   }

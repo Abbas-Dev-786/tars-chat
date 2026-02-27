@@ -58,7 +58,6 @@ export default function ChatArea() {
     }
   }, [messages, isScrolledUp]);
 
-  // Mark as read only when the conversation changes, not on every new message
   useEffect(() => {
     if (conversationId) {
       markRead({ conversationId }).catch(console.error);
@@ -97,7 +96,6 @@ export default function ChatArea() {
         onScroll={handleScroll}
       >
         {messages === undefined || isUserLoading || !userId ? (
-          // Skeleton loader while messages or user data is loading
           <>
             <MessageSkeleton isMe={false} />
             <MessageSkeleton isMe={true} />
