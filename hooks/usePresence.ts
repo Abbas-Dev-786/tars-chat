@@ -6,10 +6,7 @@ export function usePresence() {
   const updatePresence = useMutation(api.users.updatePresence);
 
   useEffect(() => {
-    let mounted = true;
-
     const setPresence = async () => {
-      if (!mounted) return;
       try {
         await updatePresence();
       } catch (error) {
@@ -19,11 +16,9 @@ export function usePresence() {
 
     setPresence();
 
-    // Ping every 10 seconds to keep lastSeen current
     const intervalId = setInterval(setPresence, 10000);
 
     return () => {
-      mounted = false;
       clearInterval(intervalId);
     };
   }, [updatePresence]);

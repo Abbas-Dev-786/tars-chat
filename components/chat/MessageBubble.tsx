@@ -8,21 +8,14 @@ import { Button } from "@/components/ui/button";
 import { SmilePlus, Trash2, Ban } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { Doc, Id } from "@/convex/_generated/dataModel";
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢"];
 
 interface MessageBubbleProps {
-  msg: {
-    _id: string;
-    content: string;
-    senderId: string;
-    _creationTime: number;
-    isDeleted?: boolean;
-    reactions?: { emoji: string; userIds: string[] }[];
-  };
+  msg: Doc<"messages">;
   isMe: boolean;
-  currentUserId: string;
+  currentUserId: Id<"users">;
 }
 
 export function MessageBubble({
@@ -34,11 +27,11 @@ export function MessageBubble({
   const react = useMutation(api.messages.react);
 
   const handleDelete = () => {
-    deleteMsg({ messageId: msg._id as Id<"messages"> }).catch(console.error);
+    deleteMsg({ messageId: msg._id }).catch(console.error);
   };
 
   const handleReact = (emoji: string) => {
-    react({ messageId: msg._id as Id<"messages">, emoji }).catch(console.error);
+    react({ messageId: msg._id, emoji }).catch(console.error);
   };
 
   return (
@@ -119,11 +112,11 @@ export function MessageBubble({
         <div
           className={`flex flex-wrap gap-1 mt-1 z-10 ${isMe ? "pr-2" : "pl-2"}`}
         >
-          {msg.reactions.map((r, i) => {
+          {msg.reactions.map((r) => {
             const hasReacted = r.userIds.includes(currentUserId);
             return (
               <button
-                key={i}
+                key={r.emoji}
                 onClick={() => !msg.isDeleted && handleReact(r.emoji)}
                 disabled={msg.isDeleted}
                 className={`flex items-center gap-1 text-md px-1.5 py-0.5 rounded-full border shadow-sm transition-colors cursor-pointer ${

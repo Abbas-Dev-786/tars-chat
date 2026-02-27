@@ -19,15 +19,17 @@ export function useThrottleCallback<Args extends unknown[]>(
   delay: number,
 ) {
   const lastRan = useRef(0);
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
 
   return useCallback(
     (...args: Args) => {
       const now = Date.now();
       if (now - lastRan.current >= delay) {
-        callback(...args);
+        callbackRef.current(...args);
         lastRan.current = now;
       }
     },
-    [callback, delay],
+    [delay],
   );
 }

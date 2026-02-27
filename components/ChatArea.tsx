@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Send, ArrowDown } from "lucide-react";
 import useStoreUser from "@/hooks/useStoreUser";
@@ -16,10 +16,25 @@ import { TypingIndicator } from "./chat/TypingIndicator";
 import { ChatInput } from "./chat/ChatInput";
 import { formatDateSeparator } from "@/lib/formatTime";
 
+function MessageSkeleton({ isMe }: { isMe: boolean }) {
+  return (
+    <div className={`flex ${isMe ? "justify-end" : "justify-start"} mb-3`}>
+      <div
+        className={`h-10 rounded-2xl animate-pulse bg-muted ${isMe ? "w-48 rounded-br-sm" : "w-40 rounded-bl-sm"}`}
+      />
+    </div>
+  );
+}
+
 export default function ChatArea() {
   const conversationId = useChatStore((state) => state.selectedConversationId);
+  const { userId, isLoading: isUserLoading } = useStoreUser();
 
-  const { userId } = useStoreUser();
+  const conversations = useQuery(api.conversations.list);
+  const currentConversation = conversations?.find(
+    (c) => c.id === conversationId,
+  );
+  const otherUser = currentConversation?.otherUser ?? undefined;
 
   const messages = useQuery(
     api.messages.list,
@@ -43,18 +58,17 @@ export default function ChatArea() {
     }
   }, [messages, isScrolledUp]);
 
+  // Mark as read only when the conversation changes, not on every new message
   useEffect(() => {
     if (conversationId) {
       markRead({ conversationId }).catch(console.error);
     }
-  }, [conversationId, messages, markRead]);
+  }, [conversationId, markRead]);
 
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-
-    const isUp = scrollHeight - scrollTop - clientHeight > 50;
-    setIsScrolledUp(isUp);
+    setIsScrolledUp(scrollHeight - scrollTop - clientHeight > 50);
   };
 
   const scrollToBottom = () => {
@@ -71,23 +85,26 @@ export default function ChatArea() {
   return (
     <div
       className={cn(
-        "flex-1 flex flex-col h-full relative bg-muted/10 ",
+        "flex-1 flex flex-col h-full relative bg-muted/10",
         conversationId ? "flex" : "hidden md:flex",
       )}
     >
-      <ChatHeader />
+      <ChatHeader otherUser={otherUser} />
 
       <div
         className="flex-1 overflow-y-auto p-4 space-y-4"
         ref={scrollRef}
         onScroll={handleScroll}
       >
-        {messages === undefined ? (
-          <div className="flex justify-center p-4">
-            <span className="text-muted-foreground text-sm">
-              Loading messages...
-            </span>
-          </div>
+        {messages === undefined || isUserLoading || !userId ? (
+          // Skeleton loader while messages or user data is loading
+          <>
+            <MessageSkeleton isMe={false} />
+            <MessageSkeleton isMe={true} />
+            <MessageSkeleton isMe={false} />
+            <MessageSkeleton isMe={true} />
+            <MessageSkeleton isMe={false} />
+          </>
         ) : messages.length === 0 ? (
           <div className="flex h-full items-center justify-center flex-col gap-3 animate-in fade-in duration-500">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
@@ -119,11 +136,7 @@ export default function ChatArea() {
                     </span>
                   </div>
                 )}
-                <MessageBubble
-                  msg={msg as any}
-                  isMe={isMe}
-                  currentUserId={userId!}
-                />
+                <MessageBubble msg={msg} isMe={isMe} currentUserId={userId} />
               </div>
             );
           })

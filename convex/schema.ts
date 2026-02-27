@@ -31,8 +31,10 @@ export default defineSchema({
     conversationId: v.id("conversations"),
     senderId: v.id("users"),
     content: v.string(),
-    type: v.string(), // "text", "image", "system"
-    status: v.optional(v.string()), // "sent", "delivered", "read"
+    type: v.union(v.literal("text"), v.literal("image"), v.literal("system")),
+    status: v.optional(
+      v.union(v.literal("sent"), v.literal("delivered"), v.literal("read")),
+    ),
     isDeleted: v.optional(v.boolean()),
     reactions: v.optional(
       v.array(

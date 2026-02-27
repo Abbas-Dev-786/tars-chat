@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Send } from "lucide-react";
+import { Send, RefreshCw } from "lucide-react";
 import { useChatStore } from "@/store/useChatStore";
 import { useThrottleCallback } from "@/hooks/use-debounce";
 
@@ -12,6 +11,9 @@ export function ChatInput({ onSend }: { onSend: () => void }) {
   const conversationId = useChatStore((state) => state.selectedConversationId);
 
   const [newMessage, setNewMessage] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
+
   const sendMessage = useMutation(api.messages.send);
   const setTyping = useMutation(api.typing.set);
 
@@ -21,12 +23,16 @@ export function ChatInput({ onSend }: { onSend: () => void }) {
 
   const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNewMessage(e.target.value);
+    setSendError(null);
     throttledSetTyping();
   };
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!newMessage.trim() || !conversationId) return;
+    if (!newMessage.trim() || !conversationId || isSending) return;
+
+    setIsSending(true);
+    setSendError(null);
 
     try {
       await sendMessage({
@@ -35,13 +41,24 @@ export function ChatInput({ onSend }: { onSend: () => void }) {
       });
       setNewMessage("");
       onSend();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setSendError("Failed to send. Tap to retry.");
+    } finally {
+      setIsSending(false);
     }
   };
 
   return (
     <div className="p-4 bg-background border-t border-border">
+      {sendError && (
+        <button
+          onClick={() => handleSend()}
+          className="w-full text-xs text-destructive mb-2 flex items-center gap-1.5 hover:underline"
+        >
+          <RefreshCw className="w-3 h-3" />
+          {sendError}
+        </button>
+      )}
       <form onSubmit={handleSend} className="flex gap-2">
         <Textarea
           value={newMessage}
@@ -58,7 +75,7 @@ export function ChatInput({ onSend }: { onSend: () => void }) {
         />
         <Button
           type="submit"
-          disabled={!newMessage.trim()}
+          disabled={!newMessage.trim() || isSending}
           size="icon"
           className="shrink-0 transition-transform active:scale-95"
         >

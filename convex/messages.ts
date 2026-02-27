@@ -34,7 +34,7 @@ export const send = mutation({
 
     if (!me) throw new Error("User not found");
 
-    await ctx.db.insert("messages", {
+    const messageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       senderId: me._id,
       content: args.content.trim(),
@@ -47,28 +47,28 @@ export const send = mutation({
     });
 
     const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation) return;
-
-    for (const participantId of conversation.participantIds) {
-      if (participantId !== me._id) {
-        const membership = await ctx.db
-          .query("conversationMembers")
-          .withIndex("by_user_conversation", (q) =>
-            q
-              .eq("userId", participantId)
-              .eq("conversationId", args.conversationId),
-          )
-          .unique();
-        if (membership) {
-          await ctx.db.patch(membership._id, {
-            hasUnread: true,
-            unreadCount: (membership.unreadCount || 0) + 1,
-          });
+    if (conversation) {
+      for (const participantId of conversation.participantIds) {
+        if (participantId !== me._id) {
+          const membership = await ctx.db
+            .query("conversationMembers")
+            .withIndex("by_user_conversation", (q) =>
+              q
+                .eq("userId", participantId)
+                .eq("conversationId", args.conversationId),
+            )
+            .unique();
+          if (membership) {
+            await ctx.db.patch(membership._id, {
+              hasUnread: true,
+              unreadCount: (membership.unreadCount ?? 0) + 1,
+            });
+          }
         }
       }
     }
 
-    // Also clear typing indicator for the sender if it exists
+    // Clear the sender's typing indicator immediately upon sending
     const typingIndicator = await ctx.db
       .query("typingIndicators")
       .withIndex("by_conversation_user", (q) =>
@@ -77,9 +77,10 @@ export const send = mutation({
       .unique();
 
     if (typingIndicator) {
-      // Set expiresAt to 0 to immediately expire it
       await ctx.db.patch(typingIndicator._id, { expiresAt: 0 });
     }
+
+    return messageId;
   },
 });
 
@@ -103,10 +104,8 @@ export const deleteMsg = mutation({
       throw new Error("Cannot delete someone else's message");
     }
 
-    await ctx.db.patch(args.messageId, {
-      isDeleted: true,
-      content: "", // optionally clear content or keep it for moderation
-    });
+    // Soft delete: mark as deleted; content is preserved for moderation
+    await ctx.db.patch(args.messageId, { isDeleted: true });
   },
 });
 
@@ -129,26 +128,34 @@ export const react = mutation({
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
 
-    let reactions = message.reactions || [];
+    const reactions = message.reactions ? [...message.reactions] : [];
 
     const existingReactionIndex = reactions.findIndex(
       (r) => r.emoji === args.emoji,
     );
 
     if (existingReactionIndex !== -1) {
-      const userIds = reactions[existingReactionIndex].userIds;
+      const userIds = [...reactions[existingReactionIndex].userIds];
       const userIndex = userIds.indexOf(me._id);
 
       if (userIndex !== -1) {
         // Toggle off
         userIds.splice(userIndex, 1);
         if (userIds.length === 0) {
-          // Remove emoji completely if no users left
+          // Remove emoji group entirely if no users left
           reactions.splice(existingReactionIndex, 1);
+        } else {
+          reactions[existingReactionIndex] = {
+            ...reactions[existingReactionIndex],
+            userIds,
+          };
         }
       } else {
         // Add user to this emoji
-        userIds.push(me._id);
+        reactions[existingReactionIndex] = {
+          ...reactions[existingReactionIndex],
+          userIds: [...userIds, me._id],
+        };
       }
     } else {
       // New emoji reaction

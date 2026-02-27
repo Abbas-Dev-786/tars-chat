@@ -1,25 +1,27 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useChatStore } from "@/store/useChatStore";
 import { formatDateSeparator, formatTimeOnly } from "@/lib/formatTime";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-export function ChatHeader() {
-  const selectedConversationId = useChatStore(
-    (state) => state.selectedConversationId,
-  );
+interface OtherUser {
+  name: string;
+  image?: string;
+  isOnline: boolean;
+  lastSeen: number;
+}
+
+interface ChatHeaderProps {
+  otherUser?: OtherUser;
+}
+
+export function ChatHeader({ otherUser }: ChatHeaderProps) {
   const setSelectedConversationId = useChatStore(
     (state) => state.setSelectedConversation,
   );
   const onBack = () => setSelectedConversationId(null);
-
-  const conversations = useQuery(api.conversations.list);
-  const currentConversation = conversations?.find(
-    (c) => c.id === selectedConversationId,
-  );
-  const otherUser = currentConversation?.otherUser;
 
   return (
     <div className="h-16 border-b border-border bg-background p-4 flex items-center shadow-sm z-10 gap-3">

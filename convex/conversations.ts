@@ -82,7 +82,8 @@ export const list = query({
         // Get the other participant
         const otherUserId = conversation.participantIds.find(
           (id) => id !== me._id,
-        )!;
+        );
+        if (!otherUserId) return null; // skip malformed conversations
         const otherUserDoc = await ctx.db.get(otherUserId);
 
         // Compute isOnline based on lastSeen

@@ -42,7 +42,7 @@ export default function ConversationList({
           return (
             <div
               key={conv.id}
-              onClick={() => onSelect(conv.id as Id<"conversations">)}
+              onClick={() => onSelect(conv.id)}
               className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                 isSelected ? "bg-primary/10" : "hover:bg-muted"
               }`}
