@@ -1,8 +1,9 @@
 "use client";
 
 import { useQuery, useMutation } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Send, ArrowDown } from "lucide-react";
 import useStoreUser from "@/hooks/useStoreUser";
@@ -30,15 +31,25 @@ export default function ChatArea() {
   const conversationId = useChatStore((state) => state.selectedConversationId);
   const { userId, isLoading: isUserLoading } = useStoreUser();
 
-  const conversations = useQuery(api.conversations.list);
+  const { results: conversations } = usePaginatedQuery(
+    api.conversations.list,
+    {},
+    { initialNumItems: 10 },
+  );
+
   const currentConversation = conversations?.find(
-    (c) => c.id === conversationId,
+    (c: any) => c.id === conversationId,
   );
   const otherUser = currentConversation?.otherUser ?? undefined;
 
-  const messages = useQuery(
+  const {
+    results: messages,
+    status: messagesStatus,
+    loadMore,
+  } = usePaginatedQuery(
     api.messages.list,
     conversationId ? { conversationId } : "skip",
+    { initialNumItems: 10 },
   );
 
   const typers = useQuery(
@@ -67,6 +78,12 @@ export default function ChatArea() {
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+
+    // Check if scrolled near top to load more
+    if (scrollTop < 50 && messagesStatus === "CanLoadMore") {
+      loadMore(20);
+    }
+
     setIsScrolledUp(scrollHeight - scrollTop - clientHeight > 50);
   };
 
@@ -95,7 +112,9 @@ export default function ChatArea() {
         ref={scrollRef}
         onScroll={handleScroll}
       >
-        {messages === undefined || isUserLoading || !userId ? (
+        {(messages === undefined && messagesStatus === "LoadingFirstPage") ||
+        isUserLoading ||
+        !userId ? (
           <>
             <MessageSkeleton isMe={false} />
             <MessageSkeleton isMe={true} />
@@ -103,7 +122,7 @@ export default function ChatArea() {
             <MessageSkeleton isMe={true} />
             <MessageSkeleton isMe={false} />
           </>
-        ) : messages.length === 0 ? (
+        ) : messages.length === 0 && messagesStatus !== "LoadingFirstPage" ? (
           <div className="flex h-full items-center justify-center flex-col gap-3 animate-in fade-in duration-500">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
               <Send className="w-6 h-6 text-muted-foreground ml-1" />
@@ -116,28 +135,35 @@ export default function ChatArea() {
             </span>
           </div>
         ) : (
-          messages.map((msg, index) => {
-            const isMe = msg.senderId === userId;
-            const currentDay = formatDateSeparator(msg._creationTime);
-            const prevMsg = index > 0 ? messages[index - 1] : null;
-            const prevDay = prevMsg
-              ? formatDateSeparator(prevMsg._creationTime)
-              : null;
-            const showDate = currentDay !== prevDay;
+          <>
+            <div className="h-4 w-full flex justify-center py-2">
+              {messagesStatus === "LoadingMore" && (
+                <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              )}
+            </div>
+            {[...messages].reverse().map((msg, index, array) => {
+              const isMe = msg.senderId === userId;
+              const currentDay = formatDateSeparator(msg._creationTime);
+              const prevMsg = index > 0 ? array[index - 1] : null;
+              const prevDay = prevMsg
+                ? formatDateSeparator(prevMsg._creationTime)
+                : null;
+              const showDate = currentDay !== prevDay;
 
-            return (
-              <div key={msg._id} className="flex flex-col">
-                {showDate && (
-                  <div className="flex justify-center my-4">
-                    <span className="bg-background/80 backdrop-blur-sm text-muted-foreground text-xs px-3 py-1 rounded-md shadow-sm border border-border/50 z-10">
-                      {currentDay}
-                    </span>
-                  </div>
-                )}
-                <MessageBubble msg={msg} isMe={isMe} currentUserId={userId} />
-              </div>
-            );
-          })
+              return (
+                <div key={msg._id} className="flex flex-col">
+                  {showDate && (
+                    <div className="flex justify-center my-4">
+                      <span className="bg-background/80 backdrop-blur-sm text-muted-foreground text-xs px-3 py-1 rounded-md shadow-sm border border-border/50 z-10">
+                        {currentDay}
+                      </span>
+                    </div>
+                  )}
+                  <MessageBubble msg={msg} isMe={isMe} currentUserId={userId} />
+                </div>
+              );
+            })}
+          </>
         )}
 
         <TypingIndicator typers={typers} />

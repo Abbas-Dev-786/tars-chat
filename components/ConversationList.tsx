@@ -1,7 +1,8 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,9 +33,30 @@ export default function ConversationList({
   const selectedConversationId = useChatStore(
     (state) => state.selectedConversationId,
   );
-  const conversations = useQuery(api.conversations.list);
+  const {
+    results: conversations,
+    status: conversationsStatus,
+    loadMore,
+  } = usePaginatedQuery(api.conversations.list, {}, { initialNumItems: 20 });
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  if (conversations === undefined) {
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+
+    // Check if scrolled near bottom to load more
+    if (
+      scrollHeight - scrollTop - clientHeight < 50 &&
+      conversationsStatus === "CanLoadMore"
+    ) {
+      loadMore(20);
+    }
+  };
+
+  if (
+    conversations === undefined &&
+    conversationsStatus === "LoadingFirstPage"
+  ) {
     return (
       <div className="flex flex-col gap-1 p-2">
         {Array.from({ length: 6 }).map((_, i) => (
@@ -59,7 +81,11 @@ export default function ConversationList({
   }
 
   return (
-    <ScrollArea className="flex-1">
+    <ScrollArea
+      className="flex-1"
+      viewportRef={scrollRef}
+      onScrollCapture={handleScroll}
+    >
       <div className="flex flex-col gap-1 p-2">
         {conversations.map((conv) => {
           const isSelected = selectedConversationId === conv.id;
@@ -117,6 +143,11 @@ export default function ConversationList({
             </div>
           );
         })}
+        <div className="h-4 w-full flex justify-center py-2">
+          {conversationsStatus === "LoadingMore" && (
+            <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          )}
+        </div>
       </div>
     </ScrollArea>
   );

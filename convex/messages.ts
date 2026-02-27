@@ -1,18 +1,24 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+import { paginationOptsValidator } from "convex/server";
+
 export const list = query({
-  args: { conversationId: v.id("conversations") },
+  args: {
+    conversationId: v.id("conversations"),
+    paginationOpts: paginationOptsValidator,
+  },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+    if (!identity) return { page: [], isDone: true, continueCursor: "" };
 
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) =>
         q.eq("conversationId", args.conversationId),
       )
-      .collect();
+      .order("desc")
+      .paginate(args.paginationOpts);
 
     return messages;
   },
@@ -42,8 +48,9 @@ export const send = mutation({
       status: "sent",
     });
 
+    const now = Date.now();
     await ctx.db.patch(args.conversationId, {
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
 
     const conversation = await ctx.db.get(args.conversationId);
@@ -62,6 +69,19 @@ export const send = mutation({
             await ctx.db.patch(membership._id, {
               hasUnread: true,
               unreadCount: (membership.unreadCount ?? 0) + 1,
+              updatedAt: now,
+            });
+          }
+        } else {
+          const membership = await ctx.db
+            .query("conversationMembers")
+            .withIndex("by_user_conversation", (q) =>
+              q.eq("userId", me._id).eq("conversationId", args.conversationId),
+            )
+            .unique();
+          if (membership) {
+            await ctx.db.patch(membership._id, {
+              updatedAt: now,
             });
           }
         }

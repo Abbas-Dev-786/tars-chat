@@ -1,6 +1,8 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+import { paginationOptsValidator } from "convex/server";
+
 export const getOrCreate = mutation({
   args: { otherUserId: v.id("users") },
   handler: async (ctx, args) => {
@@ -31,11 +33,12 @@ export const getOrCreate = mutation({
       }
     }
 
+    const now = Date.now();
     // Create new
     const conversationId = await ctx.db.insert("conversations", {
       participantIds: [me._id, args.otherUserId],
       isGroup: false,
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
 
     await ctx.db.insert("conversationMembers", {
@@ -43,6 +46,7 @@ export const getOrCreate = mutation({
       userId: me._id,
       hasUnread: false,
       unreadCount: 0,
+      updatedAt: now,
     });
 
     await ctx.db.insert("conversationMembers", {
@@ -50,6 +54,7 @@ export const getOrCreate = mutation({
       userId: args.otherUserId,
       hasUnread: false,
       unreadCount: 0,
+      updatedAt: now,
     });
 
     return conversationId;
@@ -57,25 +62,26 @@ export const getOrCreate = mutation({
 });
 
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+    if (!identity) return { page: [], isDone: true, continueCursor: "" };
 
     const me = await ctx.db
       .query("users")
       .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.subject))
       .unique();
 
-    if (!me) return [];
+    if (!me) return { page: [], isDone: true, continueCursor: "" };
 
-    const memberships = await ctx.db
+    const paginatedMemberships = await ctx.db
       .query("conversationMembers")
-      .withIndex("by_user", (q) => q.eq("userId", me._id))
-      .collect();
+      .withIndex("by_user_updatedAt", (q) => q.eq("userId", me._id))
+      .order("desc") // newest updated conversations first
+      .paginate(args.paginationOpts);
 
     const conversations = await Promise.all(
-      memberships.map(async (membership) => {
+      paginatedMemberships.page.map(async (membership) => {
         const conversation = await ctx.db.get(membership.conversationId);
         if (!conversation) return null;
 
@@ -114,9 +120,10 @@ export const list = query({
       }),
     );
 
-    return conversations
-      .filter((c) => c !== null)
-      .sort((a, b) => b!.updatedAt - a!.updatedAt);
+    return {
+      ...paginatedMemberships,
+      page: conversations.filter((c) => c !== null),
+    };
   },
 });
 

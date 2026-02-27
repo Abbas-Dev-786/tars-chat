@@ -22,10 +22,12 @@ export default defineSchema({
     userId: v.id("users"),
     hasUnread: v.boolean(),
     unreadCount: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
   })
     .index("by_conversation", ["conversationId"])
     .index("by_user", ["userId"])
-    .index("by_user_conversation", ["userId", "conversationId"]),
+    .index("by_user_conversation", ["userId", "conversationId"])
+    .index("by_user_updatedAt", ["userId", "updatedAt"]),
 
   messages: defineTable({
     conversationId: v.id("conversations"),
